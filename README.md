@@ -118,6 +118,111 @@ Launch `copilot` in a folder that contains code you want to work with.
 
 By default, `copilot` utilizes Claude Sonnet 4.5. Run the `/model` slash command to choose from other available models, including Claude Sonnet 4 and GPT-5.
 
+### copilot-play (TypeScript TUI wrapper)
+
+This repo includes a TypeScript wrapper that runs Copilot CLI in a split terminal UI so you can play a simple, turn-based game while Copilot is working. When Copilot waits for input, gameplay pauses and keys are routed to Copilot. The wrapper prefers hooks-based state to detect busy/idle, with prompt-regex fallback.
+
+Install and build:
+
+```bash
+npm install
+npm run build
+```
+
+Run:
+
+```bash
+node dist/copilot-play.js
+```
+
+Pass Copilot CLI flags after `--`:
+
+```bash
+node dist/copilot-play.js -- --experimental
+```
+
+Override the hooks state file if needed:
+
+```bash
+node dist/copilot-play.js --state-file /tmp/copilot-hooks.json -- --experimental
+```
+
+Controls: arrows/WASD to move, Ctrl+G to toggle focus if detection is off, Ctrl+Q to quit.
+
+#### Hooks-based busy/idle state (recommended)
+
+1. Make the hook script executable:
+
+```bash
+chmod +x scripts/copilot-hook.sh
+```
+
+2. Set a shared state file path:
+
+```bash
+export COPILOT_HOOKS_STATE="$HOME/.copilot/hooks-state.json"
+```
+
+3. In the repo where you run Copilot, add `.github/hooks/hooks.json`:
+
+```json
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "type": "command",
+        "bash": "/path/to/copilot-hook.sh idle",
+        "cwd": ".",
+        "timeoutSec": 5
+      }
+    ],
+    "userPromptSubmitted": [
+      {
+        "type": "command",
+        "bash": "/path/to/copilot-hook.sh busy",
+        "cwd": ".",
+        "timeoutSec": 5
+      }
+    ],
+    "preToolUse": [
+      {
+        "type": "command",
+        "bash": "/path/to/copilot-hook.sh busy",
+        "cwd": ".",
+        "timeoutSec": 5
+      }
+    ],
+    "postToolUse": [
+      {
+        "type": "command",
+        "bash": "/path/to/copilot-hook.sh busy",
+        "cwd": ".",
+        "timeoutSec": 5
+      }
+    ],
+    "errorOccurred": [
+      {
+        "type": "command",
+        "bash": "/path/to/copilot-hook.sh idle",
+        "cwd": ".",
+        "timeoutSec": 5
+      }
+    ],
+    "sessionEnd": [
+      {
+        "type": "command",
+        "bash": "/path/to/copilot-hook.sh idle",
+        "cwd": ".",
+        "timeoutSec": 5
+      }
+    ]
+  }
+}
+```
+
+The hooks set `busy` when work starts, and the wrapper uses prompt detection to flip back to `idle` when Copilot is ready for your next input.
+
 ### Experimental Mode
 
 Experimental mode enables access to new features that are still in development. You can activate experimental mode by:
