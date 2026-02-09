@@ -118,9 +118,123 @@ Launch `copilot` in a folder that contains code you want to work with.
 
 By default, `copilot` utilizes Claude Sonnet 4.5. Run the `/model` slash command to choose from other available models, including Claude Sonnet 4 and GPT-5.
 
-### copilot-play (TypeScript TUI wrapper)
+### copilot-play (tmux wrapper - recommended)
 
-This repo includes a TypeScript wrapper that runs Copilot CLI in a split terminal UI so you can play a simple, turn-based game while Copilot is working. When Copilot waits for input, gameplay pauses and keys are routed to Copilot. The wrapper prefers hooks-based state to detect busy/idle, with prompt-regex fallback.
+This repo includes a tmux-based wrapper that runs Copilot CLI in a dedicated window alongside a game/visual in another window. When Copilot is busy working, it automatically switches to the game window. When Copilot is idle waiting for input, it switches back. This approach keeps both copilot and the game in full terminal space without any UI corruption.
+
+**Setup:**
+
+1. Make scripts executable:
+
+```bash
+chmod +x copilot-tmux.sh tmux-controller.sh scripts/copilot-hook.sh
+```
+
+2. Set the shared state file path:
+
+```bash
+export COPILOT_HOOKS_STATE="$HOME/.copilot/hooks-state.json"
+```
+
+3. Install cmatrix (or set a different `GAME_COMMAND`):
+
+```bash
+# macOS
+brew install cmatrix
+
+# Ubuntu/Debian
+sudo apt install cmatrix
+```
+
+4. In the repo where you run Copilot, add `.github/hooks/hooks.json`:
+
+```json
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "type": "command",
+        "bash": "/path/to/copilot-cli/scripts/copilot-hook.sh idle",
+        "cwd": ".",
+        "timeoutSec": 5
+      }
+    ],
+    "userPromptSubmitted": [
+      {
+        "type": "command",
+        "bash": "/path/to/copilot-cli/scripts/copilot-hook.sh busy",
+        "cwd": ".",
+        "timeoutSec": 5
+      }
+    ],
+    "preToolUse": [
+      {
+        "type": "command",
+        "bash": "/path/to/copilot-cli/scripts/copilot-hook.sh busy",
+        "cwd": ".",
+        "timeoutSec": 5
+      }
+    ],
+    "postToolUse": [
+      {
+        "type": "command",
+        "bash": "/path/to/copilot-cli/scripts/copilot-hook.sh busy",
+        "cwd": ".",
+        "timeoutSec": 5
+      }
+    ],
+    "errorOccurred": [
+      {
+        "type": "command",
+        "bash": "/path/to/copilot-cli/scripts/copilot-hook.sh idle",
+        "cwd": ".",
+        "timeoutSec": 5
+      }
+    ],
+    "sessionEnd": [
+      {
+        "type": "command",
+        "bash": "/path/to/copilot-cli/scripts/copilot-hook.sh idle",
+        "cwd": ".",
+        "timeoutSec": 5
+      }
+    ]
+  }
+}
+```
+
+**Run:**
+
+```bash
+npm run play:tmux -- --experimental
+```
+
+Or run directly:
+
+```bash
+./copilot-tmux.sh --experimental
+```
+
+**Controls:**
+- Auto-switches: Game view when busy → Copilot view when idle
+- Manual toggle: `Ctrl+G` (or tmux prefix + 0/1)
+- Debug pane: Shows state changes at bottom of copilot window
+- Game: Continues running in background (no pause)
+
+**Configuration:**
+
+```bash
+# Use a different visual/game
+export GAME_COMMAND="asciiquarium"
+
+# Custom state file
+export COPILOT_HOOKS_STATE="/tmp/copilot-hooks.json"
+```
+
+### copilot-play (TypeScript TUI wrapper - legacy)
+
+A blessed-based wrapper that embeds copilot in a split UI. This can have UI issues due to embedding copilot's rich TUI inside a box. Use the tmux wrapper above for better compatibility.
 
 Install and build:
 

@@ -4,7 +4,9 @@
   "type": "commonjs",
   "scripts": {
     "build": "tsc",
-    "play": "node dist/copilot-play.js"
+    "play": "node dist/copilot-play.js",
+    "play:tmux": "./copilot-tmux.sh",
+    "play:tmux:help": "echo 'Usage: npm run play:tmux -- [copilot args]'"
   },
   "dependencies": {
     "blessed": "^0.1.81",
